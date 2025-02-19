@@ -15,9 +15,11 @@ class AzureService:
             openai_api_version=os.environ["AZURE_OPENAI_API_VERSION"],
         )
 
+        base_prompt = "You are an intelligent assistant that help collect daily standup updates. You should focus on natural conversations and reducing user workload through automated drafting. In these standups, you should cover: accomplishments since last standup, plans for today, and any blockers or challenges that are currently being faced. \nFollowing is data that you will use to provide these updates. *Github Issues, Github Commits*\nYou should ask questions, if needed, about any blockers, or if there is a task that I taking more than a 3 days to resolve. If the answer to these questions is unclear, ask follow up questions. If the prompt starts with ***INIT***, then start your message with the date provided in the prompt between the !!! symbols followed by a new line."
+
         template = ChatPromptTemplate.from_messages(
             [
-                ("system", "you talk like a valley girl"),
+                ("system", base_prompt),
                 MessagesPlaceholder(variable_name="messages")
             ]
         )
