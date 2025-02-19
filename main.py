@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from app.core.config import settings
 from app.services.azure_service import AzureService
 from app.services.slack_service import start
+from app.services.github_service import GitHubService
 from app.models.requests import CompletionRequest, SlackMessageRequest
 import os
 
@@ -17,8 +18,9 @@ app = FastAPI(
 
 # Initialize services
 try:
-    azure_service = AzureService()
     slack_app = start()
+    azure_service = AzureService()
+    # github_service = GitHubService()
 except Exception as e:
     print(f"Error initializing services: {str(e)}")
     
@@ -40,7 +42,7 @@ async def get_completion(request: CompletionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/v1/slack/send-message")
+@app.post("/slack/message")
 async def send_slack_message(request: SlackMessageRequest):
     """
     Send a message to a Slack channel
