@@ -14,7 +14,7 @@ app_handler = SlackRequestHandler(app)
 azure_service = AzureService()
 github_service = GitHubService()
 
-stop_completions = True
+stop_completions = False
 
 @app.event("message")
 def handle_message(message: typing.Dict, say: Say):
@@ -37,16 +37,19 @@ def new_thread(channel_id: str, context: str = None):
     current_date = date.today()
     formatted_date = current_date.strftime("%B %d, %Y")
 
+    def convert_date(date_str):
+        return time.strftime('%Y-%m-%d %H:%M:%S', time.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ'))
     commits = []
-
     for i in github_service.get_commits("rhythms-project"):
-        date_zulu = i["commit"]["author"]["date"]
-        date_local = time.strftime('%Y-%m-%d %H:%M:%S', time.strptime(date_zulu, '%Y-%m-%dT%H:%M:%SZ'))
+        date_local = convert_date(i["commit"]["author"]["date"])
         commits.append(date_local + " " + i["commit"]["message"])
     
     issues = []
     for i in github_service.get_issues("rhythms-project"):
-        issues.append(i["title"])
+        if i["state"] == "open":
+            issues.append(i["title"] + ", issued on " + convert_date(i["created_at"]))
+        if i["state"] == "closed":
+            issues.append(i["title"] + ", closed on " + convert_date(i["closed_at"]))
 
 
     if stop_completions:
@@ -67,7 +70,17 @@ api = FastAPI()
 
 #USERID: U08E538DSBB
 
-@api.post("/api/v1/newchat")
+@api.get(settings.API_V1_STR + "/getgitissues")
+def get_git_issues():
+    resp = github_service.get_issues("rhythms-project")
+    for issue in resp:
+        if issue["state"] == "open":
+            print(issue["title"] + ", issued on " + issue["created_at"])
+        if issue["state"] == "closed":
+            print(issue["title"] + ", closed on " + issue["closed_at"])
+    return resp
+
+@api.post(settings.API_V1_STR + "/newchat")
 def new_chat(request: NewChat):
     resp = app.client.conversations_open(users=request.user_id)
     if resp['ok']:

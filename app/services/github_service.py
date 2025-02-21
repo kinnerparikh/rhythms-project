@@ -14,8 +14,8 @@ class GitHubService:
         self.user = self._request("user")['login']
 
 
-    def _request(self, url: str):
-        response = requests.get(self.base_url + url, headers=self.headers)
+    def _request(self, url: str, params: dict = None):
+        response = requests.get(self.base_url + url, headers=self.headers, params=params)
         if response.status_code != 200:
             raise Exception(f"Error: {response.json()}")
         return response.json()
@@ -30,4 +30,8 @@ class GitHubService:
         return self._request(f"repos/{self.user}/{repo_name}/pulls")
     
     def get_issues(self, repo_name: str):
-        return self._request(f"repos/{self.user}/{repo_name}/issues")
+        params = {
+            "filter": "assigned",
+            "state": "all"
+        }
+        return self._request(f"repos/{self.user}/{repo_name}/issues", params=params)
