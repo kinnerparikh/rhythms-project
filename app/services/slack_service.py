@@ -26,8 +26,19 @@ def new_chat(message, say):
     current_date = date.today()
     formatted_date = current_date.strftime("%B %d, %Y")
 
+    commits = []
+
+    for i in github_service.get_commits("rhythms-project"):
+        date_zulu = i["commit"]["author"]["date"]
+        date_local = time.strftime('%Y-%m-%d %H:%M:%S', time.strptime(date_zulu, '%Y-%m-%dT%H:%M:%SZ'))
+        commits.append(date_local + " " + i["commit"]["message"])
+    
+    issues = []
+    for i in github_service.get_issues("rhythms-project"):
+        issues.append(i["title"])
+
     response = azure_service.get_completion(
-        prompt=f"***INIT*** DATE!!!{formatted_date}!!! ***ENDINIT***",
+        prompt=f"***INIT*** \nDATE!!!{formatted_date}!!! \nrecent commits: {commits}, open issues: {issues}\n***ENDINIT***",
         thread_id=curr_ts
     )
 
@@ -45,9 +56,6 @@ def respond_to_any_message(message, say: Say):
     )
 
     say(response)
-
-
-    
 
 
 def start():

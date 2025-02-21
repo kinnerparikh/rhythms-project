@@ -18,6 +18,7 @@ class Config(BaseSettings):
     AZURE_OPENAI_ENDPOINT: str
     AZURE_OPENAI_DEPLOYMENT_NAME: str
     AZURE_OPENAI_API_VERSION: str
+    OPENAI_KEY: str
 
     LANGSMITH_TRACING: str
     LANGSMITH_API_KEY: str

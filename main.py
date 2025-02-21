@@ -1,3 +1,4 @@
+import sqlite3
 from app.core.config import settings
 import typing, time
 from datetime import date
@@ -16,6 +17,12 @@ github_service = GitHubService()
 
 stop_completions = False
 
+@app.event("app_mention")
+def handle_app_mention(body, say):
+    print(body['event']['text'].split('>')[1].strip())
+    user = body['event']['user']
+    print(user)
+
 @app.event("message")
 def handle_message(message: typing.Dict, say: Say):
     print(message)
@@ -27,8 +34,6 @@ def handle_message(message: typing.Dict, say: Say):
             thread_id=message["thread_ts"].split(".")[0]
         )
         say(response)
-    else:
-        print("Not a DM, ignoring")
 
 def new_thread(channel_id: str, context: str = None):
     say = Say(client=app.client, channel=channel_id)
@@ -70,15 +75,15 @@ api = FastAPI()
 
 #USERID: U08E538DSBB
 
-@api.get(settings.API_V1_STR + "/getgitissues")
-def get_git_issues():
-    resp = github_service.get_issues("rhythms-project")
-    for issue in resp:
-        if issue["state"] == "open":
-            print(issue["title"] + ", issued on " + issue["created_at"])
-        if issue["state"] == "closed":
-            print(issue["title"] + ", closed on " + issue["closed_at"])
-    return resp
+# @api.get(settings.API_V1_STR + "/getgitissues")
+# def get_git_issues():
+#     resp = github_service.get_issues("rhythms-project")
+#     for issue in resp:
+#         if issue["state"] == "open":
+#             print(issue["title"] + ", issued on " + issue["created_at"])
+#         if issue["state"] == "closed":
+#             print(issue["title"] + ", closed on " + issue["closed_at"])
+#     return resp
 
 @api.post(settings.API_V1_STR + "/newchat")
 def new_chat(request: NewChat):
