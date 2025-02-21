@@ -1,58 +1,81 @@
-from fastapi import FastAPI, HTTPException
-# from fastapi.middleware.cors import CORSMiddleware
-# from app.core.config import settings
-# from app.api.routes import router
 from app.core.config import settings
+import typing, time
+from datetime import date
+
+# ---- Slack Bolt ----
+from slack_bolt import App, Say
+from slack_bolt.adapter.fastapi import SlackRequestHandler
+
 from app.services.azure_service import AzureService
-from app.services.slack_service import start
 from app.services.github_service import GitHubService
-from app.models.requests import CompletionRequest, SlackMessageRequest
-import os
 
+app = App(token=settings.SLACK_BOT_TOKEN, signing_secret=settings.SLACK_SIGNING_SECRET)
+app_handler = SlackRequestHandler(app)
+azure_service = AzureService()
+github_service = GitHubService()
 
-app = FastAPI(
-    title="Standup Bot",
-    description="Intelligent assistant for collecting standup updates",
-    version="1.0.0"
-)
+stop_completions = True
 
-# Initialize services
-try:
-    slack_app = start()
-    azure_service = AzureService()
-    # github_service = GitHubService()
-except Exception as e:
-    print(f"Error initializing services: {str(e)}")
-    
-@app.get("/")
-def read_root():
-    return {"message": "Hello World"}
-
-@app.post("/api/v1/azure/completion")
-async def get_completion(request: CompletionRequest):
-    """
-    Get a completion from Azure OpenAI
-    """
-    try:
+@app.event("message")
+def handle_message(message: typing.Dict, say: Say):
+    print(message)
+    if (message['channel_type'] == 'im'):
+        if (stop_completions):
+            return
         response = azure_service.get_completion(
-            prompt=request.prompt,
-            system_message=request.system_message
+            prompt=message["text"],
+            thread_id=message["thread_ts"].split(".")[0]
         )
-        return {"response": response}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        say(response)
+    else:
+        print("Not a DM, ignoring")
 
-@app.post("/slack/message")
-async def send_slack_message(request: SlackMessageRequest):
-    """
-    Send a message to a Slack channel
-    """
-    try:
-        response = slack_app.client.chat_postMessage(
-            channel=request.channel,
-            text=request.message
-        )
-        return {"message_ts": response["ts"], "channel": response["channel"]}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+def new_thread(channel_id: str, context: str = None):
+    say = Say(client=app.client, channel=channel_id)
+    say.thread_ts = int(time.time())
 
+    current_date = date.today()
+    formatted_date = current_date.strftime("%B %d, %Y")
+
+    commits = []
+
+    for i in github_service.get_commits("rhythms-project"):
+        date_zulu = i["commit"]["author"]["date"]
+        date_local = time.strftime('%Y-%m-%d %H:%M:%S', time.strptime(date_zulu, '%Y-%m-%dT%H:%M:%SZ'))
+        commits.append(date_local + " " + i["commit"]["message"])
+    
+    issues = []
+    for i in github_service.get_issues("rhythms-project"):
+        issues.append(i["title"])
+
+
+    if stop_completions:
+        say("new thread")
+        return
+    response = azure_service.get_completion(
+        prompt=f"***INIT*** \nDATE!!!{formatted_date}!!! \nrecent commits: {commits}, open issues: {issues}\n***ENDINIT***",
+        thread_id=say.thread_ts
+    )
+
+    say(response)
+
+# ---- FastAPI ----
+from fastapi import FastAPI, Request
+from app.models.requests import NewChat
+
+api = FastAPI()
+
+#USERID: U08E538DSBB
+
+@api.post("/api/v1/newchat")
+def new_chat(request: NewChat):
+    resp = app.client.conversations_open(users=request.user_id)
+    if resp['ok']:
+        channel_id = resp['channel']['id']
+    else:
+        return {"error": resp['error']}
+    new_thread(channel_id, context=request.context)
+
+@api.post("/slack/events")
+async def endpoint(req: Request):
+    return await app_handler.handle(req)

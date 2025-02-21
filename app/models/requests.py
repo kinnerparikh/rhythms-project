@@ -1,9 +1,6 @@
 from pydantic import BaseModel
+from typing import Optional
 
-class CompletionRequest(BaseModel):
-    prompt: str
-    system_message: str | None = None
-
-class SlackMessageRequest(BaseModel):
-    channel: str
-    message: str 
+class NewChat(BaseModel):
+    user_id: str
+    context: Optional[str] = None

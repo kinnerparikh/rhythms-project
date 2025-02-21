@@ -7,7 +7,8 @@ class Config(BaseSettings):
 
     # Slack
     SLACK_BOT_TOKEN: str
-    SLACK_APP_TOKEN: str
+    # SLACK_APP_TOKEN: str
+    SLACK_SIGNING_SECRET: str
     # GitHub
     GITHUB_TOKEN: Optional[str] = None
     # Linear
