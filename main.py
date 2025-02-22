@@ -31,13 +31,14 @@ def handle_message(message: typing.Dict, say: Say):
             return
         response = azure_service.get_completion(
             prompt=message["text"],
+            user_id=message["user"],
             thread_id=message["thread_ts"].split(".")[0]
         )
         say(response)
 
-def new_thread(channel_id: str, context: str = None):
+def new_thread(channel_id: str, user_id: str, context: str = None):
     say = Say(client=app.client, channel=channel_id)
-    say.thread_ts = int(time.time())
+    say.thread_ts = str(int(time.time()))
 
     current_date = date.today()
     formatted_date = current_date.strftime("%B %d, %Y")
@@ -62,6 +63,7 @@ def new_thread(channel_id: str, context: str = None):
         return
     response = azure_service.get_completion(
         prompt=f"***INIT*** \nDATE!!!{formatted_date}!!! \nrecent commits: {commits}, open issues: {issues}\n***ENDINIT***",
+        user_id=user_id,
         thread_id=say.thread_ts
     )
 
@@ -92,7 +94,7 @@ def new_chat(request: NewChat):
         channel_id = resp['channel']['id']
     else:
         return {"error": resp['error']}
-    new_thread(channel_id, context=request.context)
+    new_thread(channel_id, request.user_id, context=request.context)
 
 @api.post("/slack/events")
 async def endpoint(req: Request):

@@ -22,6 +22,8 @@ class Config(BaseSettings):
 
     LANGSMITH_TRACING: str
     LANGSMITH_API_KEY: str
+
+    MEM0_API_KEY: str
     
     class Config:
         env_file = ".env"
