@@ -11,6 +11,10 @@ class Config(BaseSettings):
     SLACK_SIGNING_SECRET: str
     # GitHub
     GITHUB_TOKEN: Optional[str] = None
+    GITHUB_APP_ID: str
+    GITHUB_REPO: str
+    GITHUB_APP_PRIVATE_KEY_LOC: str
+
     # Linear
     LINEAR_API_KEY: Optional[str] = None
     # Azure OpenAI

@@ -11,9 +11,9 @@ from app.services.azure_service import AzureService
 from app.services.github_service import GitHubService
 
 app = App(token=settings.SLACK_BOT_TOKEN, signing_secret=settings.SLACK_SIGNING_SECRET)
+github_service = GitHubService()
 app_handler = SlackRequestHandler(app)
 azure_service = AzureService()
-github_service = GitHubService()
 
 stop_completions = False
 
@@ -32,9 +32,13 @@ def handle_message(message: typing.Dict, say: Say):
         response = azure_service.get_completion(
             prompt=message["text"],
             user_id=message["user"],
-            thread_id=message["thread_ts"].split(".")[0]
+            thread_id=message["thread_ts"].split(".")[0],
         )
         say(response)
+
+@app.event("channel_created")
+def handle_channel_created(body, say):
+    say("channel created")
 
 def new_thread(channel_id: str, user_id: str, context: str = None):
     say = Say(client=app.client, channel=channel_id)
