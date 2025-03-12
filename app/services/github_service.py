@@ -9,7 +9,7 @@ class GitHubService:
         # self.g = Github(auth=Auth.Token(settings.GITHUB_TOKEN))
         self.headers={
             # "Authorization": f"Bearer {settings.GITHUB_TOKEN}",
-            "Authorization": "Bearer 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",
+            "Authorization": f"Bearer {settings.GITHUB_TOKEN}",
             "X-GitHub-Api-Version": "2022-11-28"
         }
         self.base_url = "https://api.github.com/"
